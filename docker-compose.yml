@@ -1,0 +1,46 @@
+version: '3'
+volumes:
+    mysql-data-vol: # Volume to host db service data locally.
+        driver: 'local'
+services: 
+    mysqldb:
+        build: ./.MYSQL
+        ports:
+          - 3306:3306
+        volumes:
+          - mysql-data-vol:/var/lib/mysql
+          - ./SITES/DBS:/DBS
+          - ./SITES/DB_DUMPS:/DB_DUMPS
+        container_name: mysql-cont
+
+    web:
+        build: ./.WEB_SERVER
+        restart: always
+        ports:
+          - 80:80
+        volumes:
+            - ./SITES/WWW:/var/www/html
+            - ./Apache_error_log:/var/log/httpd/error_log
+            - ./Apache_access_log:/var/log/httpd/access_log
+        depends_on:
+            - mysqldb
+        links:
+            - mysqldb
+        container_name: web-cont
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        environment:
+            - PMA_ARBITRARY=1
+            - PMA_HOST=mysqldb
+            - PMA_USER=root
+            - PMA_PASSWORD=root
+        links:
+            - mysqldb
+        depends_on:
+            - mysqldb
+        ports:
+            - 8080:80
+        volumes:
+            - /sessions
+      
